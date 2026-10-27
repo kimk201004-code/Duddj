@@ -90,10 +90,10 @@ def add_panel(slide, x, y, w, h, color, name):
     return s
 
 
-def add_photo(slide, file, x, y, w, h, *, focus=(0.5, 0.5), alt="", fit=False):
+def add_photo(slide, file, x, y, w, h, *, focus=(0.5, 0.5), zoom=1.0, alt="", fit=False):
     """Photo with rounded corners that covers the box (cropped around `focus`).
 
-    fit=True keeps the whole image instead (letterboxed inside the box)."""
+    zoom < 1 crops in further; fit=True keeps the whole image (letterboxed)."""
     path = PHOTOS / file
     with Image.open(path) as im:
         iw, ih = im.size
@@ -107,14 +107,12 @@ def add_photo(slide, file, x, y, w, h, *, focus=(0.5, 0.5), alt="", fit=False):
             x, w = x + (w - nw) / 2, nw
     pic = slide.shapes.add_picture(str(path), E(x), E(y), E(w), E(h))
     if not fit:
-        if img > box:
-            keep = box / img
-            left = min(max(focus[0] - keep / 2, 0), 1 - keep)
-            pic.crop_left, pic.crop_right = left, 1 - keep - left
-        else:
-            keep = img / box
-            top = min(max(focus[1] - keep / 2, 0), 1 - keep)
-            pic.crop_top, pic.crop_bottom = top, 1 - keep - top
+        # fraction of the image width/height that stays visible
+        keep_w, keep_h = (zoom * box / img, zoom) if img > box else (zoom, zoom * img / box)
+        left = min(max(focus[0] - keep_w / 2, 0), 1 - keep_w)
+        top = min(max(focus[1] - keep_h / 2, 0), 1 - keep_h)
+        pic.crop_left, pic.crop_right = left, 1 - keep_w - left
+        pic.crop_top, pic.crop_bottom = top, 1 - keep_h - top
         pic.auto_shape_type = MSO_SHAPE.ROUNDED_RECTANGLE
         _round_corners(pic, w, h)
     pic.name = f"Photo {Path(file).stem}"
@@ -200,7 +198,7 @@ def slide_fries(prs):
     s = new_slide(prs, BLACK)
     lw = 5.3
     lh = (H - GAP) / 2
-    add_photo(s, "fries_frying.jpg", M, TOP, lw, lh, focus=(0.5, 0.5),
+    add_photo(s, "fries_frying.jpg", M, TOP, lw, lh, focus=(0.52, 0.58), zoom=0.72,
               alt="Hand-cut fries frying in hot oil")
     add_panel(s, M, TOP + lh + GAP, lw, lh, TILE_DARK, name="Map panel")
     add_photo(s, "five_guys_world_map.png", M + 0.2, TOP + lh + GAP + 0.2, lw - 0.4, lh - 0.4,
