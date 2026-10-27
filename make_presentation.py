@@ -186,7 +186,7 @@ def slide_burger(prs):
     cx, cw = M + hw + GAP, W - hw - GAP
     ch = (H - 2 * GAP) / 3
     steps = [
-        ("sear_patties_grill.jpg", (0.5, 0.5), "Burger patties searing on a flat grill"),
+        ("sear_patties_grill.jpg", (0.5, 0.85), "Burger patties searing on a flat grill"),
         ("caramelized_onions.jpg", (0.5, 0.5), "Onions caramelizing in a pan"),
         ("sauteed_mushrooms.jpg", (0.5, 0.5), "Sauteed mushrooms"),
     ]
