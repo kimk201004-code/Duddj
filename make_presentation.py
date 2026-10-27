@@ -27,7 +27,6 @@ OUTPUT = ROOT / "FiveGuys_Presentation.pptx"
 RED = RGBColor(0xED, 0x1C, 0x24)
 WHITE = RGBColor(0xFF, 0xFF, 0xFF)
 BLACK = RGBColor(0x00, 0x00, 0x00)
-TILE_DARK = RGBColor(0x1E, 0x1E, 0x1E)   # panel behind the map on black slides
 
 # --- Geometry (inches unless noted)
 EMU_IN = 914400
@@ -45,12 +44,11 @@ RADIUS = 0.14                                     # photo corner radius
 PHOTO_CREDITS = (
     "Photos via Wikimedia Commons. "
     "Slide 1: Andy Li (CC0). "
-    "Slide 2: Tjeerd Wiersma (CC BY 2.0); Danielstats (CC0). "
+    "Slide 2: Tjeerd Wiersma (CC BY 2.0). "
     "Slide 3: Sarah Stierch (CC0); Bobak Ha'Eri (CC BY 3.0). "
-    "Slide 4: Bobak Ha'Eri (CC BY 3.0); US Embassy Canada (CC BY 2.0); "
+    "Slide 4: Ser Amantio di Nicolao (CC BY-SA 4.0); US Embassy Canada (CC BY 2.0); "
     "ccbarr (CC BY-SA 2.0); Roger469 (CC BY-SA 3.0). "
-    "Slide 5: Simon Doggett (CC BY 2.0); Kalsoum17 (CC BY-SA 4.0); "
-    "Five Guys country map, Canuckguy and others (CC0)."
+    "Slide 5: Kalsoum17 (CC BY-SA 4.0); Simon Doggett (CC BY 2.0)."
 )
 
 
@@ -82,39 +80,23 @@ def _round_corners(shape, w, h):
     gd.set("fmla", f"val {int(min(0.5, RADIUS / min(w, h)) * 100000)}")
 
 
-def add_panel(slide, x, y, w, h, color, name):
-    s = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, E(x), E(y), E(w), E(h))
-    _flat(s, color)
-    _round_corners(s, w, h)
-    s.name = name
-    return s
-
-
-def add_photo(slide, file, x, y, w, h, *, focus=(0.5, 0.5), zoom=1.0, alt="", fit=False):
+def add_photo(slide, file, x, y, w, h, *, focus=(0.5, 0.5), zoom=1.0, alt=""):
     """Photo with rounded corners that covers the box (cropped around `focus`).
 
-    zoom < 1 crops in further; fit=True keeps the whole image (letterboxed)."""
+    zoom < 1 crops in further around `focus`."""
     path = PHOTOS / file
     with Image.open(path) as im:
         iw, ih = im.size
     box, img = w / h, iw / ih
-    if fit:
-        if img > box:
-            nh = w / img
-            y, h = y + (h - nh) / 2, nh
-        else:
-            nw = h * img
-            x, w = x + (w - nw) / 2, nw
     pic = slide.shapes.add_picture(str(path), E(x), E(y), E(w), E(h))
-    if not fit:
-        # fraction of the image width/height that stays visible
-        keep_w, keep_h = (zoom * box / img, zoom) if img > box else (zoom, zoom * img / box)
-        left = min(max(focus[0] - keep_w / 2, 0), 1 - keep_w)
-        top = min(max(focus[1] - keep_h / 2, 0), 1 - keep_h)
-        pic.crop_left, pic.crop_right = left, 1 - keep_w - left
-        pic.crop_top, pic.crop_bottom = top, 1 - keep_h - top
-        pic.auto_shape_type = MSO_SHAPE.ROUNDED_RECTANGLE
-        _round_corners(pic, w, h)
+    # fraction of the image width/height that stays visible
+    keep_w, keep_h = (zoom * box / img, zoom) if img > box else (zoom, zoom * img / box)
+    left = min(max(focus[0] - keep_w / 2, 0), 1 - keep_w)
+    top = min(max(focus[1] - keep_h / 2, 0), 1 - keep_h)
+    pic.crop_left, pic.crop_right = left, 1 - keep_w - left
+    pic.crop_top, pic.crop_bottom = top, 1 - keep_h - top
+    pic.auto_shape_type = MSO_SHAPE.ROUNDED_RECTANGLE
+    _round_corners(pic, w, h)
     pic.name = f"Photo {Path(file).stem}"
     pic._element.nvPicPr.cNvPr.set("descr", alt)
     return pic
@@ -154,13 +136,10 @@ def slide_title(prs):
 
 
 def slide_marketing_1(prs):
-    """$0 advertising & open kitchen: cooks in view, fresh potatoes stacked in the store."""
+    """$0 advertising & open kitchen: the cooks work in full view of the customers."""
     s = new_slide(prs, WHITE)
-    lw = 7.6
-    add_photo(s, "open_kitchen_covent_garden.jpg", M, TOP, lw, H, focus=(0.42, 0.5),
+    add_photo(s, "open_kitchen_covent_garden.jpg", M, TOP, W, H, focus=(0.45, 0.42),
               alt="Five Guys cooks making burgers in an open kitchen")
-    add_photo(s, "fresh_potatoes_peanuts.jpg", M + lw + GAP, TOP, W - lw - GAP, H, focus=(0.5, 0.5),
-              alt="Sacks of fresh potatoes and boxes of peanuts inside a Five Guys")
     checker_band(s)
 
 
@@ -179,7 +158,7 @@ def slide_burger(prs):
     """Bacon cheeseburger + the three techniques: sear, caramelize, saute."""
     s = new_slide(prs, BLACK)
     hw = 7.9
-    add_photo(s, "bacon_cheeseburger.jpg", M, TOP, hw, H, focus=(0.5, 0.5),
+    add_photo(s, "bacon_cheeseburger.jpg", M, TOP, hw, H, focus=(0.55, 0.52), zoom=0.8,
               alt="Five Guys bacon cheeseburger")
     cx, cw = M + hw + GAP, W - hw - GAP
     ch = (H - 2 * GAP) / 3
@@ -194,15 +173,11 @@ def slide_burger(prs):
 
 
 def slide_fries(prs):
-    """Cajun fries: frying in oil, the finished fries, and the global map (conclusion)."""
+    """Cajun fries: hand-cut potatoes frying in oil, then the finished fries."""
     s = new_slide(prs, BLACK)
-    lw = 5.3
-    lh = (H - GAP) / 2
-    add_photo(s, "fries_frying.jpg", M, TOP, lw, lh, focus=(0.52, 0.58), zoom=0.72,
+    lw = 5.6
+    add_photo(s, "fries_frying.jpg", M, TOP, lw, H, focus=(0.52, 0.58), zoom=0.9,
               alt="Hand-cut fries frying in hot oil")
-    add_panel(s, M, TOP + lh + GAP, lw, lh, TILE_DARK, name="Map panel")
-    add_photo(s, "five_guys_world_map.png", M + 0.2, TOP + lh + GAP + 0.2, lw - 0.4, lh - 0.4,
-              fit=True, alt="World map with the countries that have Five Guys restaurants in red")
     add_photo(s, "cajun_fries.jpg", M + lw + GAP, TOP, W - lw - GAP, H, focus=(0.42, 0.5),
               alt="Five Guys Cajun fries in a white cup")
     checker_band(s)
